@@ -60,7 +60,7 @@
 
     <div id="contenedor-lector">
         <div id="lector"></div>
-        <div id="estado">Iniciando cámara trasera automáticamente...</div>
+        <div id="estado">Iniciando c&aacute;mara trasera autom&aacute;ticamente...</div>
     </div>
 
     <script>
@@ -94,16 +94,17 @@
                 onScanSuccess,
                 onScanFailure
             ).then(() => {
-                estadoDiv.innerText = "Listo para escanear código EAN";
+                // Corregido usando tilde segura en JavaScript
+                estadoDiv.innerText = "Listo para escanear c\u00F3digo EAN";
                 estadoDiv.style.color = "#333";
             }).catch((err) => {
-                estadoDiv.innerText = "Error de cámara. Asegúrate de dar permisos y usar HTTPS.";
+                estadoDiv.innerText = "Error de c\u00F1mara. Aseg\u00FArate de dar permisos y usar HTTPS.";
                 console.error("Error de inicio:", err);
             });
         }
 
         function onScanSuccess(decodedText, decodedResult) {
-            estadoDiv.innerText = "Buscando en El Corte Inglés...";
+            estadoDiv.innerText = "Buscando en El Corte Ingl\u00E9s...";
             estadoDiv.style.color = "#004b32";
 
             // Detener la cámara inmediatamente para liberar la memoria del móvil
@@ -116,19 +117,15 @@
         }
 
         function redirigir(codigo) {
-            // Forzamos a que sea tratado estrictamente como texto (String)
             let codigoLimpio = String(codigo).trim();
 
             if (esUnaURL(codigoLimpio)) {
                 window.location.href = codigoLimpio;
             } else {
-                // Si solo contiene números y mide 12 dígitos o menos,
-                // le rellenamos los ceros faltantes a la izquierda hasta llegar a los 13 del estándar ECN/EAN
                 if (/^\d+$/.test(codigoLimpio) && codigoLimpio.length < 13) {
-                    codigoLimpio = codigoLimpio.padStart(13, '0');
+                    codigoLimpio = codigoLiopio.padStart(13, '0');
                 }
 
-                // Construimos la URL exacta con el cero garantizado
                 const urlBuscadorECI = `https://www.elcorteingles.es/search-nwx/1/?s=${encodeURIComponent(codigoLimpio)}`;
                 window.location.href = urlBuscadorECI;
             }
