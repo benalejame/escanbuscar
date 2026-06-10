@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Escáner El Corte Inglés</title>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #121212;
+            color: #ffffff;
+        }
+        #reader {
+            width: 90%;
+            max-width: 450px;
+            border: 3px solid #00A86B; /* Verde El Corte Inglés */
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.5);
+        }
+        h1 {
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        #status {
+            margin-top: 20px;
+            font-size: 1rem;
+            color: #a0a0a0;
+            text-align: center;
+            padding: 0 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Listo para escanear código EAN</h1>
+    <div id="reader"></div>
+    <div id="status">Iniciando cámara trasera automáticamente...</div>
+
+    <script>
+        // Instanciamos el lector apuntando al div "reader"
+        const html5QrCode = new Html5Qrcode("reader");
+
+        // Configuración del escaneo
+        const config = { 
+            fps: 15, 
+            qrbox: { width: 280, height: 130 }, // Formato rectangular para códigos de barras
+            formatsToSupport: [ 
+                Html5QrcodeSupportedFormats.EAN_13, 
+                Html5QrcodeSupportedFormats.EAN_8 
+            ]
+        };
+
+        // Función que se ejecuta al detectar con éxito un código
+        function onScanSuccess(decodedText, decodedResult) {
+            document.getElementById('status').innerText = `EAN Detectado: ${decodedText}\nRedirigiendo...`;
+            
+            // Apagamos la cámara
+            html5QrCode.stop().then(() => {
+                const urlDestino = `https://www.elcorteingles.es/search-nwx/1/?s=${encodeURIComponent(decodedText)}`;
+                
+                // Forzar apertura en Chrome si es Android, o redirigir en la misma pestaña
+                const isAndroid = /Android/i.test(navigator.userAgent);
+                if (isAndroid) {
+                    window.location.href = `googlechrome://nav?url=${encodeURIComponent(urlDestino)}`;
+                } else {
+                    window.location.href = urlDestino;
+                }
+            }).catch(err => {
+                console.error("Error al detener la cámara", err);
+            });
+        }
+
+        // Iniciar la cámara automáticamente al cargar la página
+        // { facingMode: "environment" } fuerza al navegador a usar la cámara trasera principal
+        html5QrCode.start(
+            { facingMode: "environment" }, 
+            config, 
+            onScanSuccess
+        ).then(() => {
+            document.getElementById('status').innerText = "Escanea un código de barras...";
+        }).catch(err => {
+            document.getElementById('status').innerText = "Error: Asegúrate de estar usando HTTPS y permitir el acceso a la cámara.";
+            console.error("Error al iniciar cámara:", err);
+        });
+    </script>
+</body>
+</html>
