@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lector EAN - El Corte Inglés</title>
+    <title>Lector EAN - El Corte Ingl�s</title>
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     
     <style>
@@ -40,7 +40,7 @@
             font-size: 16px;
         }
 
-        /* Oculta cualquier interfaz o residuo de texto que intente inyectar la librería */
+        /* Oculta cualquier interfaz o residuo de texto que intente inyectar la librer�a */
         #lector button, 
         #lector select, 
         #lector span,
@@ -60,7 +60,7 @@
 
     <div id="contenedor-lector">
         <div id="lector"></div>
-        <div id="estado">Iniciando cámara trasera automáticamente...</div>
+        <div id="estado">Iniciando c�mara trasera autom�ticamente...</div>
     </div>
 
     <script>
@@ -94,23 +94,23 @@
                 onScanSuccess,
                 onScanFailure
             ).then(() => {
-                estadoDiv.innerText = "Listo para escanear código EAN";
+                estadoDiv.innerText = "Listo para escanear c�digo EAN";
                 estadoDiv.style.color = "#333";
             }).catch((err) => {
-                estadoDiv.innerText = "Error de cámara. Asegúrate de dar permisos y usar HTTPS.";
+                estadoDiv.innerText = "Error de c�mara. Aseg�rate de dar permisos y usar HTTPS.";
                 console.error("Error de inicio:", err);
             });
         }
 
         function onScanSuccess(decodedText, decodedResult) {
-            estadoDiv.innerText = "Buscando en El Corte Inglés...";
+            estadoDiv.innerText = "Buscando en El Corte Ingl�s...";
             estadoDiv.style.color = "#004b32";
 
-            // Detener la cámara inmediatamente para liberar la memoria del móvil
+            // Detener la c�mara inmediatamente para liberar la memoria del m�vil
             html5QrCode.stop().then(() => {
                 redirigir(decodedText);
             }).catch((err) => {
-                console.error("Error al detener la cámara, forzando redirección:", err);
+                console.error("Error al detener la c�mara, forzando redirecci�n:", err);
                 redirigir(decodedText);
             });
         }
@@ -122,8 +122,8 @@
             if (esUnaURL(codigoLimpio)) {
                 window.location.href = codigoLimpio;
             } else {
-                // Si solo contiene números y mide 12 dígitos o menos,
-                // le rellenamos los ceros faltantes a la izquierda hasta llegar a los 13 del estándar ECN/EAN
+                // Si solo contiene n�meros y mide 12 d�gitos o menos,
+                // le rellenamos los ceros faltantes a la izquierda hasta llegar a los 13 del est�ndar ECN/EAN
                 if (/^\d+$/.test(codigoLimpio) && codigoLimpio.length < 13) {
                     codigoLimpio = codigoLimpio.padStart(13, '0');
                 }
@@ -135,405 +135,11 @@
         }
 
         function onScanFailure(error) {
-            // Se deja vacío para mantener el rendimiento del móvil estable
+            // Se deja vac�o para mantener el rendimiento del m�vil estable
         }
 
         window.addEventListener('DOMContentLoaded', inicializarEscaner);
     </script>
 
-</body>
-</html>
-            margin-top: 15px;
-            font-weight: bold;
-            color: #666;
-            font-size: 16px;
-        }
-
-        /* TRUCO CRÍTICO: Forzamos a ocultar cualquier texto, botón o selector 
-           basura que la librería intente pintar de forma automática */
-        #lector button, 
-        #lector select, 
-        #lector span,
-        #lector br {
-            display: none !important;
-            visibility: hidden !important;
-            opacity: 0 !important;
-            height: 0 !important;
-            padding: 0 !important;
-            margin: 0 !important;
-        }
-    </style>
-</head>
-<body>
-
-    <h2>Buscador de Productos ECI</h2>
-
-    <div id="contenedor-lector">
-        <div id="lector"></div>
-        <div id="estado">Iniciando cámara trasera automáticamente...</div>
-    </div>
-
-    <script>
-        let html5QrCode;
-        const estadoDiv = document.getElementById('estado');
-
-        function esUnaURL(texto) {
-            try {
-                if (texto.startsWith('http://') || texto.startsWith('https://')) {
-                    new URL(texto);
-                    return true;
-                }
-                return false;
-            } catch (_) {
-                return false;  
-            }
-        }
-
-        function inicializarEscaner() {
-            html5QrCode = new Html5Qrcode("lector");
-
-            const config = { 
-                fps: 10, 
-                qrbox: { width: 280, height: 180 }, // Optimizado para códigos de barras horizontales
-                aspectRatio: 1.0
-            };
-
-            html5QrCode.start(
-                { facingMode: "environment" }, 
-                config,
-                onScanSuccess,
-                onScanFailure
-            ).then(() => {
-                estadoDiv.innerText = "Listo para escanear código EAN";
-                estadoDiv.style.color = "#333";
-            }).catch((err) => {
-                estadoDiv.innerText = "Error de cámara. Asegúrate de dar permisos y usar HTTPS.";
-                console.error("Error de inicio:", err);
-            });
-        }
-
-        function onScanSuccess(decodedText, decodedResult) {
-            estadoDiv.innerText = "Buscando en El Corte Inglés...";
-            estadoDiv.style.color = "#004b32";
-
-            // Detener la cámara inmediatamente para liberar memoria
-            html5QrCode.stop().then(() => {
-                redirigir(decodedText);
-            }).catch((err) => {
-                console.error("Error al detener la cámara, forzando redirección:", err);
-                redirigir(decodedText);
-            });
-        }
-
-        function redirigir(codigo) {
-            const codigoLimpio = codigo.trim();
-
-            if (esUnaURL(codigoLimpio)) {
-                window.location.href = codigoLimpio;
-            } else {
-                // Redirección directa usando tu sintaxis exacta
-                const urlBuscadorECI = `https://www.elcorteingles.es/search-nwx/1/?s=${encodeURIComponent(codigoLimpio)}`;
-                window.location.href = urlBuscadorECI;
-            }
-        }
-
-        function onScanFailure(error) {
-            // Se deja vacío para mantener el rendimiento del móvil estable
-        }
-
-        window.addEventListener('DOMContentLoaded', inicializarEscaner);
-    </script>
-
-</body>
-</html>
-        #estado {
-            margin-top: 15px;
-            font-weight: bold;
-            color: #666;
-            font-size: 16px;
-        }
-    </style>
-</head>
-<body>
-
-    <h2>Buscador de Productos ECI</h2>
-
-    <div id="contenedor-lector">
-        <div id="lector"></div>
-        <div id="estado">Iniciando cámara trasera...</div>
-    </div>
-
-    <script>
-        let html5QrCode;
-        const estadoDiv = document.getElementById('estado');
-
-        // Validador por si se escanea una URL directa en vez de un código de barras
-        function esUnaURL(texto) {
-            try {
-                if (texto.startsWith('http://') || texto.startsWith('https://')) {
-                    new URL(texto);
-                    return true;
-                }
-                return false;
-            } catch (_) {
-                return false;  
-            }
-        }
-
-        // Configuración e inicio del escáner al cargar la página
-        function inicializarEscaner() {
-            html5QrCode = new Html5Qrcode("lector");
-
-            const config = { 
-                fps: 10, // Cuadros por segundo para el procesamiento
-                qrbox: { width: 280, height: 180 }, // Cuadro de enfoque optimizado para barras horizontales
-                aspectRatio: 1.0
-            };
-
-            // Fuerza el uso de la cámara trasera ('environment')
-            html5QrCode.start(
-                { facingMode: "environment" }, 
-                config,
-                onScanSuccess,
-                onScanFailure
-            ).then(() => {
-                estadoDiv.innerText = "Coloca el código de barras en el recuadro";
-            }).catch((err) => {
-                estadoDiv.innerText = "Error de cámara. Asegúrate de dar permisos y usar HTTPS.";
-                console.error("Error de inicio:", err);
-            });
-        }
-
-        // Acción al detectar un código correctamente
-        function onScanSuccess(decodedText, decodedResult) {
-            estadoDiv.innerText = "Buscando en El Corte Inglés...";
-            estadoDiv.style.color = "#004b32";
-
-            // 1. Detener la cámara inmediatamente para liberar la RAM del móvil
-            html5QrCode.stop().then(() => {
-                console.log("Cámara apagada con éxito.");
-
-                // 2. Ejecutar la redirección según lo detectado
-                redirigir(decodedText);
-
-            }).catch((err) => {
-                console.error("Error al detener la cámara, forzando redirección:", err);
-                // Plan de rescate: si falla el apagado, redirige igualmente para que no se quede bloqueado
-                redirigir(decodedText);
-            });
-        }
-
-        // Función encargada de construir la URL y lanzar la web
-        function redirigir(codigo) {
-            const codigoLimpio = codigo.trim();
-
-            if (esUnaURL(codigoLimpio)) {
-                // Si por error se escanea un QR con enlace, lo abre
-                window.location.href = codigoLimpio;
-            } else {
-                // Sintaxis exacta solicitada para la búsqueda de El Corte Inglés
-                const urlBuscadorECI = `https://www.elcorteingles.es/search-nwx/1/?s=${encodeURIComponent(codigoLimpio)}`;
-                
-                // Redirección en la misma pestaña
-                window.location.href = urlBuscadorECI;
-            }
-        }
-
-        // Ignoramos los fallos de lectura intermedios (mientras busca código en los frames)
-        function onScanFailure(error) {
-            // Dejar vacío para no saturar el rendimiento del navegador móvil
-        }
-
-        // Arrancar automáticamente al cargar el DOM
-        window.addEventListener('DOMContentLoaded', inicializarEscaner);
-    </script>
-
-</body>
-</html>
-            background-color: #007aff;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            font-size: 16px;
-            font-weight: bold;
-            border-radius: 8px;
-            margin: 10px 0;
-            cursor: pointer;
-            width: 100%;
-        }
-        button:active {
-            background-color: #0056b3;
-        }
-        select {
-            padding: 10px;
-            width: 100%;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            border: 1px solid #ccc;
-        }
-        #estado {
-            margin-top: 15px;
-            font-weight: bold;
-            color: #666;
-        }
-    </style>
-</head>
-<body>
-
-    <h2>Escáner de Códigos</h2>
-
-    <div id="contenedor-lector">
-        <div id="lector"></div>
-        <div id="estado">Esperando a que inicies la cámara...</div>
-    </div>
-
-    <script>
-        let html5QrCode;
-        const estadoDiv = document.getElementById('estado');
-
-        // Función para validar si el texto leído es una URL válida
-        function esUnaURL(texto) {
-            try {
-                // Si empieza por http o https, validamos como URL
-                if (texto.startsWith('http://') || texto.startsWith('https://')) {
-                    new URL(texto);
-                    return true;
-                }
-                return false;
-            } catch (_) {
-                return false;  
-            }
-        }
-
-        // Configuración e inicio del escáner al cargar la página
-        function inicializarEscaner() {
-            // El primer parámetro es el ID del div donde se meterá el vídeo
-            html5QrCode = new Html5Qrcode("lector");
-
-            const config = { 
-                fps: 10,                 // Velocidad de escaneo (cuadros por segundo)
-                qrbox: { width: 250, height: 250 }, // Área de enfoque del escaneo
-                aspectRatio: 1.0
-            };
-
-            // Iniciamos usando la cámara trasera por defecto ("environment")
-            html5QrCode.start(
-                { facingMode: "environment" }, 
-                config,
-                onScanSuccess,
-                onScanFailure
-            ).catch((err) => {
-                estadoDiv.innerText = "Error al acceder a la cámara. Asegúrate de dar permisos y usar HTTPS.";
-                console.error("Error de inicio:", err);
-            });
-        }
-
-        // Qué hacer cuando se detecta un código correctamente
-        function onScanSuccess(decodedText, decodedResult) {
-            estadoDiv.innerText = "¡Código detectado! Procesando...";
-            estadoDiv.style.color = "#34c759"; // Verde
-
-            // 1. Detener la cámara INMEDIATAMENTE para liberar memoria en el móvil
-            html5QrCode.stop().then(() => {
-                console.log("Cámara detenida con éxito.");
-
-                // 2. Comprobar si el código es un enlace web
-                if (esUnaURL(decodedText)) {
-                    // Redirección limpia y compatible con iOS y Android
-                    window.location.href = decodedText;
-                } else {
-                    // Si es un código de barras de producto o texto, lo mostramos en pantalla
-                    estadoDiv.innerHTML = `Código leído (No es web): <br><strong style="font-size: 20px;">${decodedText}</strong>`;
-                    estadoDiv.style.color = "#000";
-                    
-                    // Añadimos un botón para volver a escanear si no era una web
-                    const btnReiniciar = document.createElement('button');
-                    btnReiniciar.innerText = "Escanear de nuevo";
-                    btnReiniciar.onclick = () => {
-                        btnReiniciar.remove();
-                        inicializarEscaner();
-                    };
-                    document.getElementById('contenedor-lector').appendChild(btnReiniciar);
-                }
-
-            }).catch((err) => {
-                console.error("Error al detener la cámara:", err);
-                // Si falla al detener, intentamos redirigir de todos modos
-                if (esUnaURL(decodedText)) {
-                    window.location.href = decodedText;
-                }
-            });
-        }
-
-        // Silenciamos los fallos continuos de lectura (cuando busca y no encuentra nada en el frame)
-        // para no saturar la consola del móvil.
-        function onScanFailure(error) {
-            // Se ejecuta en cada frame donde no se detecta un código. Lo dejamos vacío.
-        }
-
-        // Arrancar el escáner automáticamente cuando la ventana esté lista
-        window.addEventListener('DOMContentLoaded', inicializarEscaner);
-    </script>
-
-</body>
-</html>
-            text-align: center;
-            padding: 0 10px;
-        }
-    </style>
-</head>
-<body>
-
-    <h1>Listo para escanear código EAN</h1>
-    <div id="reader"></div>
-    <div id="status">Iniciando cámara trasera automáticamente...</div>
-
-    <script>
-        // Instanciamos el lector apuntando al div "reader"
-        const html5QrCode = new Html5Qrcode("reader");
-
-        // Configuración del escaneo
-        const config = { 
-            fps: 15, 
-            qrbox: { width: 280, height: 130 }, // Formato rectangular para códigos de barras
-            formatsToSupport: [ 
-                Html5QrcodeSupportedFormats.EAN_13, 
-                Html5QrcodeSupportedFormats.EAN_8 
-            ]
-        };
-
-        // Función que se ejecuta al detectar con éxito un código
-        function onScanSuccess(decodedText, decodedResult) {
-            document.getElementById('status').innerText = `EAN Detectado: ${decodedText}\nRedirigiendo...`;
-            
-            // Apagamos la cámara
-            html5QrCode.stop().then(() => {
-                const urlDestino = `https://www.elcorteingles.es/search-nwx/1/?s=${encodeURIComponent(decodedText)}`;
-                
-                // Forzar apertura en Chrome si es Android, o redirigir en la misma pestaña
-                const isAndroid = /Android/i.test(navigator.userAgent);
-                if (isAndroid) {
-                    window.location.href = `googlechrome://nav?url=${encodeURIComponent(urlDestino)}`;
-                } else {
-                    window.location.href = urlDestino;
-                }
-            }).catch(err => {
-                console.error("Error al detener la cámara", err);
-            });
-        }
-
-        // Iniciar la cámara automáticamente al cargar la página
-        // { facingMode: "environment" } fuerza al navegador a usar la cámara trasera principal
-        html5QrCode.start(
-            { facingMode: "environment" }, 
-            config, 
-            onScanSuccess
-        ).then(() => {
-            document.getElementById('status').innerText = "Escanea un código de barras...";
-        }).catch(err => {
-            document.getElementById('status').innerText = "Error: Asegúrate de estar usando HTTPS y permitir el acceso a la cámara.";
-            console.error("Error al iniciar cámara:", err);
-        });
-    </script>
 </body>
 </html>
