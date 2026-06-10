@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lector de Códigos</title>
+    <title>Lector EAN - El Corte Inglés</title>
+    <!-- Librería html5-qrcode desde CDN -->
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     
     <style>
@@ -17,6 +18,7 @@
         }
         h2 {
             margin-bottom: 20px;
+            color: #004b32; /* Verde ECI corporativo aproximado */
         }
         #contenedor-lector {
             max-width: 500px;
@@ -32,8 +34,110 @@
             overflow: hidden;
             background-color: #000;
         }
-        /* Estilos para los botones nativos de la librería */
-        button {
+        #estado {
+            margin-top: 15px;
+            font-weight: bold;
+            color: #666;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Buscador de Productos ECI</h2>
+
+    <div id="contenedor-lector">
+        <div id="lector"></div>
+        <div id="estado">Iniciando cámara trasera...</div>
+    </div>
+
+    <script>
+        let html5QrCode;
+        const estadoDiv = document.getElementById('estado');
+
+        // Validador por si se escanea una URL directa en vez de un código de barras
+        function esUnaURL(texto) {
+            try {
+                if (texto.startsWith('http://') || texto.startsWith('https://')) {
+                    new URL(texto);
+                    return true;
+                }
+                return false;
+            } catch (_) {
+                return false;  
+            }
+        }
+
+        // Configuración e inicio del escáner al cargar la página
+        function inicializarEscaner() {
+            html5QrCode = new Html5Qrcode("lector");
+
+            const config = { 
+                fps: 10, // Cuadros por segundo para el procesamiento
+                qrbox: { width: 280, height: 180 }, // Cuadro de enfoque optimizado para barras horizontales
+                aspectRatio: 1.0
+            };
+
+            // Fuerza el uso de la cámara trasera ('environment')
+            html5QrCode.start(
+                { facingMode: "environment" }, 
+                config,
+                onScanSuccess,
+                onScanFailure
+            ).then(() => {
+                estadoDiv.innerText = "Coloca el código de barras en el recuadro";
+            }).catch((err) => {
+                estadoDiv.innerText = "Error de cámara. Asegúrate de dar permisos y usar HTTPS.";
+                console.error("Error de inicio:", err);
+            });
+        }
+
+        // Acción al detectar un código correctamente
+        function onScanSuccess(decodedText, decodedResult) {
+            estadoDiv.innerText = "Buscando en El Corte Inglés...";
+            estadoDiv.style.color = "#004b32";
+
+            // 1. Detener la cámara inmediatamente para liberar la RAM del móvil
+            html5QrCode.stop().then(() => {
+                console.log("Cámara apagada con éxito.");
+
+                // 2. Ejecutar la redirección según lo detectado
+                redirigir(decodedText);
+
+            }).catch((err) => {
+                console.error("Error al detener la cámara, forzando redirección:", err);
+                // Plan de rescate: si falla el apagado, redirige igualmente para que no se quede bloqueado
+                redirigir(decodedText);
+            });
+        }
+
+        // Función encargada de construir la URL y lanzar la web
+        function redirigir(codigo) {
+            const codigoLimpio = codigo.trim();
+
+            if (esUnaURL(codigoLimpio)) {
+                // Si por error se escanea un QR con enlace, lo abre
+                window.location.href = codigoLimpio;
+            } else {
+                // Sintaxis exacta solicitada para la búsqueda de El Corte Inglés
+                const urlBuscadorECI = `https://www.elcorteingles.es/search-nwx/1/?s=${encodeURIComponent(codigoLimpio)}`;
+                
+                // Redirección en la misma pestaña
+                window.location.href = urlBuscadorECI;
+            }
+        }
+
+        // Ignoramos los fallos de lectura intermedios (mientras busca código en los frames)
+        function onScanFailure(error) {
+            // Dejar vacío para no saturar el rendimiento del navegador móvil
+        }
+
+        // Arrancar automáticamente al cargar el DOM
+        window.addEventListener('DOMContentLoaded', inicializarEscaner);
+    </script>
+
+</body>
+</html>
             background-color: #007aff;
             color: white;
             border: none;
