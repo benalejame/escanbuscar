@@ -3,37 +3,164 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Esc�ner El Corte Ingl�s</title>
+    <title>Lector de Códigos</title>
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    
     <style>
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             margin: 0;
-            background-color: #121212;
-            color: #ffffff;
-        }
-        #reader {
-            width: 90%;
-            max-width: 450px;
-            border: 3px solid #00A86B; /* Verde El Corte Ingl�s */
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.5);
-        }
-        h1 {
-            font-size: 1.3rem;
-            margin-bottom: 15px;
+            padding: 20px;
+            background-color: #f5f5f7;
+            color: #333;
             text-align: center;
         }
-        #status {
-            margin-top: 20px;
-            font-size: 1rem;
-            color: #a0a0a0;
+        h2 {
+            margin-bottom: 20px;
+        }
+        #contenedor-lector {
+            max-width: 500px;
+            margin: 0 auto;
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        #lector {
+            width: 100%;
+            border-radius: 8px;
+            overflow: hidden;
+            background-color: #000;
+        }
+        /* Estilos para los botones nativos de la librería */
+        button {
+            background-color: #007aff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 8px;
+            margin: 10px 0;
+            cursor: pointer;
+            width: 100%;
+        }
+        button:active {
+            background-color: #0056b3;
+        }
+        select {
+            padding: 10px;
+            width: 100%;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+        }
+        #estado {
+            margin-top: 15px;
+            font-weight: bold;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Escáner de Códigos</h2>
+
+    <div id="contenedor-lector">
+        <div id="lector"></div>
+        <div id="estado">Esperando a que inicies la cámara...</div>
+    </div>
+
+    <script>
+        let html5QrCode;
+        const estadoDiv = document.getElementById('estado');
+
+        // Función para validar si el texto leído es una URL válida
+        function esUnaURL(texto) {
+            try {
+                // Si empieza por http o https, validamos como URL
+                if (texto.startsWith('http://') || texto.startsWith('https://')) {
+                    new URL(texto);
+                    return true;
+                }
+                return false;
+            } catch (_) {
+                return false;  
+            }
+        }
+
+        // Configuración e inicio del escáner al cargar la página
+        function inicializarEscaner() {
+            // El primer parámetro es el ID del div donde se meterá el vídeo
+            html5QrCode = new Html5Qrcode("lector");
+
+            const config = { 
+                fps: 10,                 // Velocidad de escaneo (cuadros por segundo)
+                qrbox: { width: 250, height: 250 }, // Área de enfoque del escaneo
+                aspectRatio: 1.0
+            };
+
+            // Iniciamos usando la cámara trasera por defecto ("environment")
+            html5QrCode.start(
+                { facingMode: "environment" }, 
+                config,
+                onScanSuccess,
+                onScanFailure
+            ).catch((err) => {
+                estadoDiv.innerText = "Error al acceder a la cámara. Asegúrate de dar permisos y usar HTTPS.";
+                console.error("Error de inicio:", err);
+            });
+        }
+
+        // Qué hacer cuando se detecta un código correctamente
+        function onScanSuccess(decodedText, decodedResult) {
+            estadoDiv.innerText = "¡Código detectado! Procesando...";
+            estadoDiv.style.color = "#34c759"; // Verde
+
+            // 1. Detener la cámara INMEDIATAMENTE para liberar memoria en el móvil
+            html5QrCode.stop().then(() => {
+                console.log("Cámara detenida con éxito.");
+
+                // 2. Comprobar si el código es un enlace web
+                if (esUnaURL(decodedText)) {
+                    // Redirección limpia y compatible con iOS y Android
+                    window.location.href = decodedText;
+                } else {
+                    // Si es un código de barras de producto o texto, lo mostramos en pantalla
+                    estadoDiv.innerHTML = `Código leído (No es web): <br><strong style="font-size: 20px;">${decodedText}</strong>`;
+                    estadoDiv.style.color = "#000";
+                    
+                    // Añadimos un botón para volver a escanear si no era una web
+                    const btnReiniciar = document.createElement('button');
+                    btnReiniciar.innerText = "Escanear de nuevo";
+                    btnReiniciar.onclick = () => {
+                        btnReiniciar.remove();
+                        inicializarEscaner();
+                    };
+                    document.getElementById('contenedor-lector').appendChild(btnReiniciar);
+                }
+
+            }).catch((err) => {
+                console.error("Error al detener la cámara:", err);
+                // Si falla al detener, intentamos redirigir de todos modos
+                if (esUnaURL(decodedText)) {
+                    window.location.href = decodedText;
+                }
+            });
+        }
+
+        // Silenciamos los fallos continuos de lectura (cuando busca y no encuentra nada en el frame)
+        // para no saturar la consola del móvil.
+        function onScanFailure(error) {
+            // Se ejecuta en cada frame donde no se detecta un código. Lo dejamos vacío.
+        }
+
+        // Arrancar el escáner automáticamente cuando la ventana esté lista
+        window.addEventListener('DOMContentLoaded', inicializarEscaner);
+    </script>
+
+</body>
+</html>
             text-align: center;
             padding: 0 10px;
         }
@@ -41,33 +168,33 @@
 </head>
 <body>
 
-    <h1>Listo para escanear c�digo EAN</h1>
+    <h1>Listo para escanear código EAN</h1>
     <div id="reader"></div>
-    <div id="status">Iniciando c�mara trasera autom�ticamente...</div>
+    <div id="status">Iniciando cámara trasera automáticamente...</div>
 
     <script>
         // Instanciamos el lector apuntando al div "reader"
         const html5QrCode = new Html5Qrcode("reader");
 
-        // Configuraci�n del escaneo
+        // Configuración del escaneo
         const config = { 
             fps: 15, 
-            qrbox: { width: 280, height: 130 }, // Formato rectangular para c�digos de barras
+            qrbox: { width: 280, height: 130 }, // Formato rectangular para códigos de barras
             formatsToSupport: [ 
                 Html5QrcodeSupportedFormats.EAN_13, 
                 Html5QrcodeSupportedFormats.EAN_8 
             ]
         };
 
-        // Funci�n que se ejecuta al detectar con �xito un c�digo
+        // Función que se ejecuta al detectar con éxito un código
         function onScanSuccess(decodedText, decodedResult) {
             document.getElementById('status').innerText = `EAN Detectado: ${decodedText}\nRedirigiendo...`;
             
-            // Apagamos la c�mara
+            // Apagamos la cámara
             html5QrCode.stop().then(() => {
                 const urlDestino = `https://www.elcorteingles.es/search-nwx/1/?s=${encodeURIComponent(decodedText)}`;
                 
-                // Forzar apertura en Chrome si es Android, o redirigir en la misma pesta�a
+                // Forzar apertura en Chrome si es Android, o redirigir en la misma pestaña
                 const isAndroid = /Android/i.test(navigator.userAgent);
                 if (isAndroid) {
                     window.location.href = `googlechrome://nav?url=${encodeURIComponent(urlDestino)}`;
@@ -75,21 +202,21 @@
                     window.location.href = urlDestino;
                 }
             }).catch(err => {
-                console.error("Error al detener la c�mara", err);
+                console.error("Error al detener la cámara", err);
             });
         }
 
-        // Iniciar la c�mara autom�ticamente al cargar la p�gina
-        // { facingMode: "environment" } fuerza al navegador a usar la c�mara trasera principal
+        // Iniciar la cámara automáticamente al cargar la página
+        // { facingMode: "environment" } fuerza al navegador a usar la cámara trasera principal
         html5QrCode.start(
             { facingMode: "environment" }, 
             config, 
             onScanSuccess
         ).then(() => {
-            document.getElementById('status').innerText = "Escanea un c�digo de barras...";
+            document.getElementById('status').innerText = "Escanea un código de barras...";
         }).catch(err => {
-            document.getElementById('status').innerText = "Error: Aseg�rate de estar usando HTTPS y permitir el acceso a la c�mara.";
-            console.error("Error al iniciar c�mara:", err);
+            document.getElementById('status').innerText = "Error: Asegúrate de estar usando HTTPS y permitir el acceso a la cámara.";
+            console.error("Error al iniciar cámara:", err);
         });
     </script>
 </body>
