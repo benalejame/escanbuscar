@@ -40,8 +40,6 @@
             font-size: 16px;
             min-height: 24px;
         }
-
-        /* Zona del botón de la galería */
         .contenedor-galeria {
             margin-top: 20px;
         }
@@ -61,20 +59,11 @@
             background-color: #003322;
         }
         #input-archivo {
-            display: none; /* Ocultamos el input feo nativo */
+            display: none;
         }
-
-        /* Limpieza de la interfaz de la librería */
-        #lector button, 
-        #lector select, 
-        #lector span,
-        #lector br {
+        #lector button, #lector select, #lector span, #lector br {
             display: none !important;
             visibility: hidden !important;
-            opacity: 0 !important;
-            height: 0 !important;
-            padding: 0 !important;
-            margin: 0 !important;
         }
     </style>
 </head>
@@ -99,6 +88,18 @@
         const estadoDiv = document.getElementById('estado');
         const inputArchivo = document.getElementById('input-archivo');
 
+        // Asegurar permanencia en el historial al cargar la página
+        function asegurarHistorial() {
+            if (window.history && window.history.pushState) {
+                window.history.pushState({ escaner: true }, null, window.location.href);
+                
+                // Si el usuario da atrás, forzamos la recarga limpia del escáner
+                window.onpopstate = function(event) {
+                    window.location.reload();
+                };
+            }
+        }
+
         function esUnaURL(texto) {
             try {
                 if (texto.startsWith('http://') || texto.startsWith('https://')) {
@@ -112,15 +113,19 @@
         }
 
         function inicializarEscaner() {
-            html5QrCode = new Html5Qrcode("lector");
+            asegurarHistorial();
+            
+            // Forzamos formatos experimentales para mejorar la detección de EAN_13 en fotos
+            html5QrCode = new Html5Qrcode("lector", { 
+                formatsToSupport: [ Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.EAN_8, Html5QrcodeSupportedFormats.QR_CODE ] 
+            });
 
             const config = { 
-                fps: 10, 
+                fps: 15, 
                 qrbox: { width: 280, height: 180 }, 
                 aspectRatio: 1.0
             };
 
-            // Iniciar cámara trasera automáticamente
             html5QrCode.start(
                 { facingMode: "environment" }, 
                 config,
@@ -131,29 +136,54 @@
                 estadoDiv.style.color = "#333";
             }).catch((err) => {
                 estadoDiv.innerText = "Error de c\u00E1mara. Puedes usar el bot\u00F3n de la galer\u00EDa.";
-                console.error("Error de inicio de cámara:", err);
             });
 
-            // Escuchador para cuando el usuario selecciona una foto
+            // Procesamiento optimizado de imágenes de la galería
             inputArchivo.addEventListener('change', e => {
                 if (e.target.files.length === 0) return;
                 
                 const archivoImagen = e.target.files[0];
-                estadoDiv.innerText = "Procesando imagen...";
+                estadoDiv.innerText = "Optimizando imagen...";
                 estadoDiv.style.color = "#666";
 
-                // Procesar el archivo local con la librería
-                html5QrCode.scanFile(archivoImagen, true)
-                    .then(decodedText => {
-                        // Si encuentra código, procesa el éxito directamente
-                        onScanSuccess(decodedText);
-                    })
-                    .catch(err => {
-                        // Si falla o no encuentra un código nítido
-                        estadoDiv.innerText = "No se detect\u00F3 ning\u00FAn c\u00F3digo n\u00EDtido. Intenta con otra foto.";
-                        estadoDiv.style.color = "#cc0000";
-                        console.error(err);
-                    });
+                const lectorArchivo = new FileReader();
+                lectorArchivo.onload = function(event) {
+                    const img = new Image();
+                    img.onload = function() {
+                        // Creamos un canvas para redimensionar fotos pesadas de móviles
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        
+                        // Tamaño objetivo intermedio ideal para lectura de códigos de barras (800px)
+                        const maxDim = 800;
+                        let w = img.width;
+                        let h = img.height;
+                        if (w > h && w > maxDim) { h *= maxDim / w; w = maxDim; }
+                        else if (h > maxDim) { w *= maxDim / h; h = maxDim; }
+                        
+                        canvas.width = w;
+                        canvas.height = h;
+                        ctx.drawImage(img, 0, 0, w, h);
+                        
+                        // Convertir a Blob para que html5-qrcode lo procese de forma nativa
+                        canvas.toBlob(function(blob) {
+                            const archivoOptimizado = new File([blob], "scan.jpg", { type: "image/jpeg" });
+                            
+                            estadoDiv.innerText = "Buscando c\u00F3digo en la foto...";
+                            
+                            html5QrCode.scanFile(archivoOptimizado, true)
+                                .then(decodedText => {
+                                    onScanSuccess(decodedText);
+                                })
+                                .catch(err => {
+                                    estadoDiv.innerText = "No se encontr\u00F3 c\u00F3digo. Intenta centrar m\u00E1s el código de barras.";
+                                    estadoDiv.style.color = "#cc0000";
+                                });
+                        }, 'image/jpeg', 0.9);
+                    };
+                    img.src = event.target.result;
+                };
+                lectorArchivo.readAsDataURL(archivoImagen);
             });
         }
 
@@ -161,16 +191,13 @@
             estadoDiv.innerText = "Buscando en El Corte Ingl\u00E9s...";
             estadoDiv.style.color = "#004b32";
 
-            // Detener la cámara si está activa para ahorrar batería y memoria
             if (html5QrCode.isScanning) {
                 html5QrCode.stop().then(() => {
                     redirigir(decodedText);
-                }).catch((err) => {
-                    console.error("Forzando redirección:", err);
+                }).catch(() => {
                     redirigir(decodedText);
                 });
             } else {
-                // Si viene de una foto de la galería, la cámara ya está parada o no se usó
                 redirigir(decodedText);
             }
         }
@@ -179,23 +206,17 @@
             let codigoLimpio = String(codigo).trim();
 
             if (esUnaURL(codigoLimpio)) {
-                // Modificado a replace para controlar el comportamiento del botón "Atrás"
                 window.location.replace(codigoLimpio);
             } else {
                 if (/^\d+$/.test(codigoLimpio) && codigoLimpio.length < 13) {
                     codigoLimpio = codigoLimpio.padStart(13, '0');
                 }
-
                 const urlBuscadorECI = `https://www.elcorteingles.es/search-nwx/1/?s=${encodeURIComponent(codigoLimpio)}`;
-                
-                // Modificado a replace para sustituir la URL actual y que al volver atrás reinicie el escáner
                 window.location.replace(urlBuscadorECI);
             }
         }
 
-        function onScanFailure(error) {
-            // Se mantiene vacío para optimizar rendimiento en escaneo continuo por cámara
-        }
+        function onScanFailure(error) {}
 
         window.addEventListener('DOMContentLoaded', inicializarEscaner);
     </script>
