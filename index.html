@@ -94,11 +94,10 @@
                 onScanSuccess,
                 onScanFailure
             ).then(() => {
-                // Corregido usando tilde segura en JavaScript
                 estadoDiv.innerText = "Listo para escanear c\u00F3digo EAN";
                 estadoDiv.style.color = "#333";
             }).catch((err) => {
-                estadoDiv.innerText = "Error de c\u00F1mara. Aseg\u00FArate de dar permisos y usar HTTPS.";
+                estadoDiv.innerText = "Error de c\u00E1mara. Aseg\u00FArate de dar permisos y usar HTTPS.";
                 console.error("Error de inicio:", err);
             });
         }
@@ -122,8 +121,9 @@
             if (esUnaURL(codigoLimpio)) {
                 window.location.href = codigoLimpio;
             } else {
+                // CORREGIDO: Ahora usa correctamente 'codigoLimpio' sin erratas
                 if (/^\d+$/.test(codigoLimpio) && codigoLimpio.length < 13) {
-                    codigoLimpio = codigoLiopio.padStart(13, '0');
+                    codigoLimpio = codigoLimpio.padStart(13, '0');
                 }
 
                 const urlBuscadorECI = `https://www.elcorteingles.es/search-nwx/1/?s=${encodeURIComponent(codigoLimpio)}`;
