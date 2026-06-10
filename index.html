@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lector EAN - El Corte Inglés</title>
+    
+    <link rel="icon" type="image/png" href="icono.png">
+    
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     
     <style>
@@ -40,27 +43,6 @@
             font-size: 16px;
             min-height: 24px;
         }
-        .contenedor-galeria {
-            margin-top: 20px;
-        }
-        .btn-galeria {
-            display: inline-block;
-            background-color: #004b32;
-            color: white;
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-            font-size: 15px;
-            transition: background-color 0.2s;
-            box-shadow: 0 2px 6px rgba(0,75,50,0.2);
-        }
-        .btn-galeria:active {
-            background-color: #003322;
-        }
-        #input-archivo {
-            display: none;
-        }
         #lector button, #lector select, #lector span, #lector br {
             display: none !important;
             visibility: hidden !important;
@@ -74,26 +56,18 @@
     <div id="contenedor-lector">
         <div id="lector"></div>
         <div id="estado">Iniciando c&aacute;mara trasera autom&aacute;ticamente...</div>
-        
-        <div class="contenedor-galeria">
-            <label for="input-archivo" class="btn-galeria">
-                📸 Escanear desde foto/galer&iacute;a
-            </label>
-            <input type="file" id="input-archivo" accept="image/*">
-        </div>
     </div>
 
     <script>
         let html5QrCode;
         const estadoDiv = document.getElementById('estado');
-        const inputArchivo = document.getElementById('input-archivo');
 
         // Asegurar permanencia en el historial al cargar la página
         function asegurarHistorial() {
             if (window.history && window.history.pushState) {
                 window.history.pushState({ escaner: true }, null, window.location.href);
                 
-                // Si el usuario da atrás, forzamos la recarga limpia del escáner
+                // Si el usuario da atrás desde la web de destino, forzamos la recarga limpia del escáner
                 window.onpopstate = function(event) {
                     window.location.reload();
                 };
@@ -115,10 +89,7 @@
         function inicializarEscaner() {
             asegurarHistorial();
             
-            // Forzamos formatos experimentales para mejorar la detección de EAN_13 en fotos
-            html5QrCode = new Html5Qrcode("lector", { 
-                formatsToSupport: [ Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.EAN_8, Html5QrcodeSupportedFormats.QR_CODE ] 
-            });
+            html5QrCode = new Html5Qrcode("lector");
 
             const config = { 
                 fps: 15, 
@@ -135,55 +106,8 @@
                 estadoDiv.innerText = "Listo para escanear c\u00F3digo EAN";
                 estadoDiv.style.color = "#333";
             }).catch((err) => {
-                estadoDiv.innerText = "Error de c\u00E1mara. Puedes usar el bot\u00F3n de la galer\u00EDa.";
-            });
-
-            // Procesamiento optimizado de imágenes de la galería
-            inputArchivo.addEventListener('change', e => {
-                if (e.target.files.length === 0) return;
-                
-                const archivoImagen = e.target.files[0];
-                estadoDiv.innerText = "Optimizando imagen...";
-                estadoDiv.style.color = "#666";
-
-                const lectorArchivo = new FileReader();
-                lectorArchivo.onload = function(event) {
-                    const img = new Image();
-                    img.onload = function() {
-                        // Creamos un canvas para redimensionar fotos pesadas de móviles
-                        const canvas = document.createElement('canvas');
-                        const ctx = canvas.getContext('2d');
-                        
-                        // Tamaño objetivo intermedio ideal para lectura de códigos de barras (800px)
-                        const maxDim = 800;
-                        let w = img.width;
-                        let h = img.height;
-                        if (w > h && w > maxDim) { h *= maxDim / w; w = maxDim; }
-                        else if (h > maxDim) { w *= maxDim / h; h = maxDim; }
-                        
-                        canvas.width = w;
-                        canvas.height = h;
-                        ctx.drawImage(img, 0, 0, w, h);
-                        
-                        // Convertir a Blob para que html5-qrcode lo procese de forma nativa
-                        canvas.toBlob(function(blob) {
-                            const archivoOptimizado = new File([blob], "scan.jpg", { type: "image/jpeg" });
-                            
-                            estadoDiv.innerText = "Buscando c\u00F3digo en la foto...";
-                            
-                            html5QrCode.scanFile(archivoOptimizado, true)
-                                .then(decodedText => {
-                                    onScanSuccess(decodedText);
-                                })
-                                .catch(err => {
-                                    estadoDiv.innerText = "No se encontr\u00F3 c\u00F3digo. Intenta centrar m\u00E1s el código de barras.";
-                                    estadoDiv.style.color = "#cc0000";
-                                });
-                        }, 'image/jpeg', 0.9);
-                    };
-                    img.src = event.target.result;
-                };
-                lectorArchivo.readAsDataURL(archivoImagen);
+                estadoDiv.innerText = "Error de c\u00E1mara. Aseg\u00FArate de dar permisos de c\u00E1mara.";
+                console.error(err);
             });
         }
 
