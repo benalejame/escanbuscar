@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lector EAN - El Corte Inglés</title>
-    <!-- Librería html5-qrcode desde CDN -->
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     
     <style>
@@ -18,7 +17,7 @@
         }
         h2 {
             margin-bottom: 20px;
-            color: #004b32; /* Verde ECI corporativo aproximado */
+            color: #004b32; /* Verde corporativo */
         }
         #contenedor-lector {
             max-width: 500px;
@@ -34,6 +33,110 @@
             overflow: hidden;
             background-color: #000;
         }
+        #estado {
+            margin-top: 15px;
+            font-weight: bold;
+            color: #666;
+            font-size: 16px;
+        }
+
+        /* TRUCO CRÍTICO: Forzamos a ocultar cualquier texto, botón o selector 
+           basura que la librería intente pintar de forma automática */
+        #lector button, 
+        #lector select, 
+        #lector span,
+        #lector br {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+            height: 0 !important;
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Buscador de Productos ECI</h2>
+
+    <div id="contenedor-lector">
+        <div id="lector"></div>
+        <div id="estado">Iniciando cámara trasera automáticamente...</div>
+    </div>
+
+    <script>
+        let html5QrCode;
+        const estadoDiv = document.getElementById('estado');
+
+        function esUnaURL(texto) {
+            try {
+                if (texto.startsWith('http://') || texto.startsWith('https://')) {
+                    new URL(texto);
+                    return true;
+                }
+                return false;
+            } catch (_) {
+                return false;  
+            }
+        }
+
+        function inicializarEscaner() {
+            html5QrCode = new Html5Qrcode("lector");
+
+            const config = { 
+                fps: 10, 
+                qrbox: { width: 280, height: 180 }, // Optimizado para códigos de barras horizontales
+                aspectRatio: 1.0
+            };
+
+            html5QrCode.start(
+                { facingMode: "environment" }, 
+                config,
+                onScanSuccess,
+                onScanFailure
+            ).then(() => {
+                estadoDiv.innerText = "Listo para escanear código EAN";
+                estadoDiv.style.color = "#333";
+            }).catch((err) => {
+                estadoDiv.innerText = "Error de cámara. Asegúrate de dar permisos y usar HTTPS.";
+                console.error("Error de inicio:", err);
+            });
+        }
+
+        function onScanSuccess(decodedText, decodedResult) {
+            estadoDiv.innerText = "Buscando en El Corte Inglés...";
+            estadoDiv.style.color = "#004b32";
+
+            // Detener la cámara inmediatamente para liberar memoria
+            html5QrCode.stop().then(() => {
+                redirigir(decodedText);
+            }).catch((err) => {
+                console.error("Error al detener la cámara, forzando redirección:", err);
+                redirigir(decodedText);
+            });
+        }
+
+        function redirigir(codigo) {
+            const codigoLimpio = codigo.trim();
+
+            if (esUnaURL(codigoLimpio)) {
+                window.location.href = codigoLimpio;
+            } else {
+                // Redirección directa usando tu sintaxis exacta
+                const urlBuscadorECI = `https://www.elcorteingles.es/search-nwx/1/?s=${encodeURIComponent(codigoLimpio)}`;
+                window.location.href = urlBuscadorECI;
+            }
+        }
+
+        function onScanFailure(error) {
+            // Se deja vacío para mantener el rendimiento del móvil estable
+        }
+
+        window.addEventListener('DOMContentLoaded', inicializarEscaner);
+    </script>
+
+</body>
+</html>
         #estado {
             margin-top: 15px;
             font-weight: bold;
