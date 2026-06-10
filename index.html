@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lector EAN - El Corte Ingl�s</title>
+    <title>Lector EAN - El Corte Inglés</title>
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     
     <style>
@@ -38,9 +38,33 @@
             font-weight: bold;
             color: #666;
             font-size: 16px;
+            min-height: 24px;
         }
 
-        /* Oculta cualquier interfaz o residuo de texto que intente inyectar la librer�a */
+        /* Zona del botón de la galería */
+        .contenedor-galeria {
+            margin-top: 20px;
+        }
+        .btn-galeria {
+            display: inline-block;
+            background-color: #004b32;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 15px;
+            transition: background-color 0.2s;
+            box-shadow: 0 2px 6px rgba(0,75,50,0.2);
+        }
+        .btn-galeria:active {
+            background-color: #003322;
+        }
+        #input-archivo {
+            display: none; /* Ocultamos el input feo nativo */
+        }
+
+        /* Limpieza de la interfaz de la librería */
         #lector button, 
         #lector select, 
         #lector span,
@@ -61,11 +85,19 @@
     <div id="contenedor-lector">
         <div id="lector"></div>
         <div id="estado">Iniciando c&aacute;mara trasera autom&aacute;ticamente...</div>
+        
+        <div class="contenedor-galeria">
+            <label for="input-archivo" class="btn-galeria">
+                📸 Escanear desde foto/galer&iacute;a
+            </label>
+            <input type="file" id="input-archivo" accept="image/*">
+        </div>
     </div>
 
     <script>
         let html5QrCode;
         const estadoDiv = document.getElementById('estado');
+        const inputArchivo = document.getElementById('input-archivo');
 
         function esUnaURL(texto) {
             try {
@@ -84,10 +116,11 @@
 
             const config = { 
                 fps: 10, 
-                qrbox: { width: 280, height: 180 }, // Cuadro optimizado para EAN-13
+                qrbox: { width: 280, height: 180 }, 
                 aspectRatio: 1.0
             };
 
+            // Iniciar cámara trasera automáticamente
             html5QrCode.start(
                 { facingMode: "environment" }, 
                 config,
@@ -97,42 +130,71 @@
                 estadoDiv.innerText = "Listo para escanear c\u00F3digo EAN";
                 estadoDiv.style.color = "#333";
             }).catch((err) => {
-                estadoDiv.innerText = "Error de c\u00E1mara. Aseg\u00FArate de dar permisos y usar HTTPS.";
-                console.error("Error de inicio:", err);
+                estadoDiv.innerText = "Error de c\u00E1mara. Puedes usar el bot\u00F3n de la galer\u00EDa.";
+                console.error("Error de inicio de cámara:", err);
+            });
+
+            // Escuchador para cuando el usuario selecciona una foto
+            inputArchivo.addEventListener('change', e => {
+                if (e.target.files.length === 0) return;
+                
+                const archivoImagen = e.target.files[0];
+                estadoDiv.innerText = "Procesando imagen...";
+                estadoDiv.style.color = "#666";
+
+                // Procesar el archivo local con la librería
+                html5QrCode.scanFile(archivoImagen, true)
+                    .then(decodedText => {
+                        // Si encuentra código, procesa el éxito directamente
+                        onScanSuccess(decodedText);
+                    })
+                    .catch(err => {
+                        // Si falla o no encuentra un código nítido
+                        estadoDiv.innerText = "No se detect\u00F3 ning\u00FAn c\u00F3digo n\u00EDtido. Intenta con otra foto.";
+                        estadoDiv.style.color = "#cc0000";
+                        console.error(err);
+                    });
             });
         }
 
-        function onScanSuccess(decodedText, decodedResult) {
+        function onScanSuccess(decodedText) {
             estadoDiv.innerText = "Buscando en El Corte Ingl\u00E9s...";
             estadoDiv.style.color = "#004b32";
 
-            // Detener la c�mara inmediatamente para liberar la memoria del m�vil
-            html5QrCode.stop().then(() => {
+            // Detener la cámara si está activa para ahorrar batería y memoria
+            if (html5QrCode.isScanning) {
+                html5QrCode.stop().then(() => {
+                    redirigir(decodedText);
+                }).catch((err) => {
+                    console.error("Forzando redirección:", err);
+                    redirigir(decodedText);
+                });
+            } else {
+                // Si viene de una foto de la galería, la cámara ya está parada o no se usó
                 redirigir(decodedText);
-            }).catch((err) => {
-                console.error("Error al detener la c�mara, forzando redirecci�n:", err);
-                redirigir(decodedText);
-            });
+            }
         }
 
         function redirigir(codigo) {
             let codigoLimpio = String(codigo).trim();
 
             if (esUnaURL(codigoLimpio)) {
-                window.location.href = codigoLimpio;
+                // Modificado a replace para controlar el comportamiento del botón "Atrás"
+                window.location.replace(codigoLimpio);
             } else {
-                // CORREGIDO: Ahora usa correctamente 'codigoLimpio' sin erratas
                 if (/^\d+$/.test(codigoLimpio) && codigoLimpio.length < 13) {
                     codigoLimpio = codigoLimpio.padStart(13, '0');
                 }
 
                 const urlBuscadorECI = `https://www.elcorteingles.es/search-nwx/1/?s=${encodeURIComponent(codigoLimpio)}`;
-                window.location.href = urlBuscadorECI;
+                
+                // Modificado a replace para sustituir la URL actual y que al volver atrás reinicie el escáner
+                window.location.replace(urlBuscadorECI);
             }
         }
 
         function onScanFailure(error) {
-            // Se deja vac�o para mantener el rendimiento del m�vil estable
+            // Se mantiene vacío para optimizar rendimiento en escaneo continuo por cámara
         }
 
         window.addEventListener('DOMContentLoaded', inicializarEscaner);
