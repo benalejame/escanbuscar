@@ -17,7 +17,7 @@
         }
         h2 {
             margin-bottom: 20px;
-            color: #004b32; /* Verde corporativo */
+            color: #004b32; /* Verde corporativo ECI */
         }
         #contenedor-lector {
             max-width: 500px;
@@ -34,6 +34,115 @@
             background-color: #000;
         }
         #estado {
+            margin-top: 15px;
+            font-weight: bold;
+            color: #666;
+            font-size: 16px;
+        }
+
+        /* Oculta cualquier interfaz o residuo de texto que intente inyectar la librería */
+        #lector button, 
+        #lector select, 
+        #lector span,
+        #lector br {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+            height: 0 !important;
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Buscador de Productos ECI</h2>
+
+    <div id="contenedor-lector">
+        <div id="lector"></div>
+        <div id="estado">Iniciando cámara trasera automáticamente...</div>
+    </div>
+
+    <script>
+        let html5QrCode;
+        const estadoDiv = document.getElementById('estado');
+
+        function esUnaURL(texto) {
+            try {
+                if (texto.startsWith('http://') || texto.startsWith('https://')) {
+                    new URL(texto);
+                    return true;
+                }
+                return false;
+            } catch (_) {
+                return false;  
+            }
+        }
+
+        function inicializarEscaner() {
+            html5QrCode = new Html5Qrcode("lector");
+
+            const config = { 
+                fps: 10, 
+                qrbox: { width: 280, height: 180 }, // Cuadro optimizado para EAN-13
+                aspectRatio: 1.0
+            };
+
+            html5QrCode.start(
+                { facingMode: "environment" }, 
+                config,
+                onScanSuccess,
+                onScanFailure
+            ).then(() => {
+                estadoDiv.innerText = "Listo para escanear código EAN";
+                estadoDiv.style.color = "#333";
+            }).catch((err) => {
+                estadoDiv.innerText = "Error de cámara. Asegúrate de dar permisos y usar HTTPS.";
+                console.error("Error de inicio:", err);
+            });
+        }
+
+        function onScanSuccess(decodedText, decodedResult) {
+            estadoDiv.innerText = "Buscando en El Corte Inglés...";
+            estadoDiv.style.color = "#004b32";
+
+            // Detener la cámara inmediatamente para liberar la memoria del móvil
+            html5QrCode.stop().then(() => {
+                redirigir(decodedText);
+            }).catch((err) => {
+                console.error("Error al detener la cámara, forzando redirección:", err);
+                redirigir(decodedText);
+            });
+        }
+
+        function redirigir(codigo) {
+            // Forzamos a que sea tratado estrictamente como texto (String)
+            let codigoLimpio = String(codigo).trim();
+
+            if (esUnaURL(codigoLimpio)) {
+                window.location.href = codigoLimpio;
+            } else {
+                // Si solo contiene números y mide 12 dígitos o menos,
+                // le rellenamos los ceros faltantes a la izquierda hasta llegar a los 13 del estándar ECN/EAN
+                if (/^\d+$/.test(codigoLimpio) && codigoLimpio.length < 13) {
+                    codigoLimpio = codigoLimpio.padStart(13, '0');
+                }
+
+                // Construimos la URL exacta con el cero garantizado
+                const urlBuscadorECI = `https://www.elcorteingles.es/search-nwx/1/?s=${encodeURIComponent(codigoLimpio)}`;
+                window.location.href = urlBuscadorECI;
+            }
+        }
+
+        function onScanFailure(error) {
+            // Se deja vacío para mantener el rendimiento del móvil estable
+        }
+
+        window.addEventListener('DOMContentLoaded', inicializarEscaner);
+    </script>
+
+</body>
+</html>
             margin-top: 15px;
             font-weight: bold;
             color: #666;
