@@ -62,16 +62,20 @@
         let html5QrCode;
         const estadoDiv = document.getElementById('estado');
 
-        // Asegurar permanencia en el historial al cargar la página
-        function asegurarHistorial() {
-            if (window.history && window.history.pushState) {
-                window.history.pushState({ escaner: true }, null, window.location.href);
-                
-                // Si el usuario da atrás desde la web de destino, forzamos la recarga limpia del escáner
-                window.onpopstate = function(event) {
-                    window.location.reload();
-                };
+        // Controlar el comportamiento cuando el usuario vuelve atrás en el historial
+        function configurarHistorial() {
+            // Reemplazamos el estado inicial para asegurar el track en el historial
+            if (window.history && window.history.replaceState) {
+                window.history.replaceState({ escaner: true }, null, window.location.href);
             }
+
+            // Detecta si la página se recupera de la caché interna del móvil (bfcache) al volver atrás
+            window.addEventListener('pageshow', function(event) {
+                if (event.persisted) {
+                    // Si el usuario volvió atrás, recargamos para reiniciar la cámara limpiamente
+                    window.location.reload();
+                }
+            });
         }
 
         function esUnaURL(texto) {
@@ -87,7 +91,7 @@
         }
 
         function inicializarEscaner() {
-            asegurarHistorial();
+            configurarHistorial();
             
             html5QrCode = new Html5Qrcode("lector");
 
@@ -130,13 +134,15 @@
             let codigoLimpio = String(codigo).trim();
 
             if (esUnaURL(codigoLimpio)) {
-                window.location.replace(codigoLimpio);
+                // Cambiado a .href para mantener el historial
+                window.location.href = codigoLimpio;
             } else {
                 if (/^\d+$/.test(codigoLimpio) && codigoLimpio.length < 13) {
                     codigoLimpio = codigoLimpio.padStart(13, '0');
                 }
                 const urlBuscadorECI = `https://www.elcorteingles.es/search-nwx/1/?s=${encodeURIComponent(codigoLimpio)}`;
-                window.location.replace(urlBuscadorECI);
+                // Cambiado a .href para mantener el historial
+                window.location.href = urlBuscadorECI;
             }
         }
 
